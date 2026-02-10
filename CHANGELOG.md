@@ -7,6 +7,19 @@ and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-10
+
+### Added
+- First-class DeepAgent runtime service with per-process runtime cache and durable sqlite-backed long-term store (`agent_store`).
+- Plugin component system with auto-discovery from `~/.snd/plugins` and `<cwd>/.snd/plugins` for tools, skills, sub-agents, and sandboxes.
+- New plugin observability commands: `snd plugin list` and `snd plugin check`.
+- New macOS launchd service commands: `snd service install|uninstall|start|stop|status|logs`.
+- New tests for plugin loader behavior, DeepAgent runtime fallback/success, prompt policy, sqlite store backend, and launchd spec generation.
+
+### Changed
+- Config now includes `agent.*` runtime/plugin controls and keeps backward compatibility with legacy `llm.useDeepAgents`.
+- `snd init --wizard` now suggests `snd service install` for macOS background sync.
+
 ## [0.1.3] - 2026-02-10
 
 ### Added

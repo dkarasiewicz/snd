@@ -41,6 +41,14 @@ describe('DraftAgentService', () => {
             apiKeySecretKey: 'llm:default',
             useDeepAgents: true,
           },
+          agent: {
+            enabled: true,
+            plugins: { enabled: true, roots: [] },
+            skills: { enabled: true },
+            subagents: { enabled: true },
+            tools: { enabled: true },
+            sandbox: { enabled: false },
+          },
           rules: {
             ignoreSenders: [],
             ignoreDomains: [],

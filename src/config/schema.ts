@@ -54,7 +54,8 @@ const llmSchema = z.object({
   baseUrl: nullAsUndefined(z.string().url()),
   model: z.string().min(1).default('gpt-4o-mini'),
   apiKeySecretKey: z.string().min(1).default('llm:default'),
-  useDeepAgents: z.boolean().default(true),
+  // Legacy compatibility knob; normalized into agent.enabled.
+  useDeepAgents: nullAsUndefined(z.boolean()),
 });
 
 const rulesSchema = z.object({
@@ -64,7 +65,70 @@ const rulesSchema = z.object({
   styles: z.array(styleRuleSchema).default([]),
 });
 
-export const sndConfigSchema = z.object({
+const agentSchema = z.object({
+  enabled: z.boolean().default(true),
+  plugins: z
+    .object({
+      enabled: z.boolean().default(true),
+      roots: z.array(z.string().min(1)).default([]),
+    })
+    .default({
+      enabled: true,
+      roots: [],
+    }),
+  skills: z
+    .object({
+      enabled: z.boolean().default(true),
+    })
+    .default({
+      enabled: true,
+    }),
+  subagents: z
+    .object({
+      enabled: z.boolean().default(true),
+    })
+    .default({
+      enabled: true,
+    }),
+  tools: z
+    .object({
+      enabled: z.boolean().default(true),
+    })
+    .default({
+      enabled: true,
+    }),
+  sandbox: z
+    .object({
+      enabled: z.boolean().default(false),
+    })
+    .default({
+      enabled: false,
+    }),
+});
+
+function defaultAgentConfig(): z.infer<typeof agentSchema> {
+  return {
+    enabled: true,
+    plugins: {
+      enabled: true,
+      roots: [],
+    },
+    skills: {
+      enabled: true,
+    },
+    subagents: {
+      enabled: true,
+    },
+    tools: {
+      enabled: true,
+    },
+    sandbox: {
+      enabled: false,
+    },
+  };
+}
+
+const baseSndConfigSchema = z.object({
   version: z.literal(1).default(1),
   defaultAccountId: nullAsUndefined(z.string()),
   poll: pollSchema.default({ intervalSeconds: 300 }),
@@ -82,7 +146,6 @@ export const sndConfigSchema = z.object({
     provider: 'openai-compatible',
     model: 'gpt-4o-mini',
     apiKeySecretKey: 'llm:default',
-    useDeepAgents: true,
   }),
   rules: rulesSchema.default({
     ignoreSenders: [],
@@ -90,7 +153,31 @@ export const sndConfigSchema = z.object({
     globalVibe: 'brief, technical, direct',
     styles: [],
   }),
+  agent: nullAsUndefined(agentSchema),
   accounts: z.array(accountSchema).default([]),
+});
+
+export const sndConfigSchema = baseSndConfigSchema.transform((config) => {
+  const legacyEnabled = config.llm.useDeepAgents;
+  const normalizedAgent = {
+    ...defaultAgentConfig(),
+    ...(config.agent ?? {}),
+  };
+
+  if (config.agent?.enabled === undefined && legacyEnabled !== undefined) {
+    normalizedAgent.enabled = legacyEnabled;
+  }
+
+  const finalAgentEnabled = normalizedAgent.enabled;
+
+  return {
+    ...config,
+    agent: normalizedAgent,
+    llm: {
+      ...config.llm,
+      useDeepAgents: finalAgentEnabled,
+    },
+  };
 });
 
 export type SndConfig = z.infer<typeof sndConfigSchema>;

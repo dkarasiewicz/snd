@@ -3,7 +3,15 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ensureSndHome, SND_DB_PATH } from '../core/paths.js';
 import { makeMessageIdCandidates, normalizeMessageId } from '../imap/message-id.js';
-import { DraftRecord, MemoryNote, MessageRecord, RuleRecord, SyncState, ThreadRecord } from './types.js';
+import {
+  AgentStoreEntry,
+  DraftRecord,
+  MemoryNote,
+  MessageRecord,
+  RuleRecord,
+  SyncState,
+  ThreadRecord,
+} from './types.js';
 
 function parseJsonArray(input: string | null): string[] {
   if (!input) {
@@ -121,9 +129,19 @@ export class DatabaseService implements OnModuleDestroy {
         UNIQUE(scope, key)
       );
 
+      CREATE TABLE IF NOT EXISTS agent_store (
+        id TEXT PRIMARY KEY,
+        namespace TEXT NOT NULL,
+        key TEXT NOT NULL,
+        value TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        UNIQUE(namespace, key)
+      );
+
       CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id);
       CREATE INDEX IF NOT EXISTS idx_messages_account_message_id ON messages(account_id, message_id);
       CREATE INDEX IF NOT EXISTS idx_threads_needs_reply ON threads(needs_reply, last_message_at);
+      CREATE INDEX IF NOT EXISTS idx_agent_store_namespace ON agent_store(namespace, updated_at);
     `);
 
     this.migrateLegacyMessageUniq();
@@ -780,5 +798,109 @@ export class DatabaseService implements OnModuleDestroy {
       value: row.value,
       updatedAt: row.updated_at,
     }));
+  }
+
+  upsertAgentStoreEntry(input: Omit<AgentStoreEntry, 'id' | 'updatedAt'> & { id?: string }): AgentStoreEntry {
+    const existing = this.getAgentStoreEntry(input.namespace, input.key);
+    const id = input.id ?? existing?.id ?? randomUUID();
+    const updatedAt = Date.now();
+
+    this.db
+      .prepare(
+        `
+      INSERT INTO agent_store (id, namespace, key, value, updated_at)
+      VALUES (@id, @namespace, @key, @value, @updatedAt)
+      ON CONFLICT(namespace, key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `,
+      )
+      .run({
+        id,
+        namespace: input.namespace,
+        key: input.key,
+        value: input.value,
+        updatedAt,
+      });
+
+    return {
+      id,
+      namespace: input.namespace,
+      key: input.key,
+      value: input.value,
+      updatedAt,
+    };
+  }
+
+  getAgentStoreEntry(namespace: string, key: string): AgentStoreEntry | null {
+    const row = this.db
+      .prepare(
+        `
+      SELECT id, namespace, key, value, updated_at
+      FROM agent_store
+      WHERE namespace = ? AND key = ?
+      LIMIT 1
+    `,
+      )
+      .get(namespace, key) as
+      | {
+          id: string;
+          namespace: string;
+          key: string;
+          value: string;
+          updated_at: number;
+        }
+      | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      namespace: row.namespace,
+      key: row.key,
+      value: row.value,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  listAgentStoreEntries(namespace: string, keyPrefix?: string): AgentStoreEntry[] {
+    const rows = keyPrefix
+      ? this.db
+        .prepare(
+          `
+        SELECT id, namespace, key, value, updated_at
+        FROM agent_store
+        WHERE namespace = ? AND key LIKE ?
+        ORDER BY updated_at DESC
+      `,
+        )
+        .all(namespace, `${keyPrefix}%`)
+      : this.db
+        .prepare(
+          `
+        SELECT id, namespace, key, value, updated_at
+        FROM agent_store
+        WHERE namespace = ?
+        ORDER BY updated_at DESC
+      `,
+        )
+        .all(namespace);
+
+    return (rows as Array<{ id: string; namespace: string; key: string; value: string; updated_at: number }>).map((row) => ({
+      id: row.id,
+      namespace: row.namespace,
+      key: row.key,
+      value: row.value,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  deleteAgentStoreEntry(namespace: string, key: string): boolean {
+    const result = this.db
+      .prepare('DELETE FROM agent_store WHERE namespace = ? AND key = ?')
+      .run(namespace, key);
+    return result.changes > 0;
   }
 }

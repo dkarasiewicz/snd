@@ -13,9 +13,11 @@ It is intentionally brief and autonomous:
 - IMAP polling (`run --once` or daemon loop)
 - Gmail OAuth2 + generic IMAP password auth
 - BYO LLM token + model (`openai-compatible` API)
-- Optional DeepAgents integration (auto-detected via `deepagents` package)
+- DeepAgent runtime with durable local store + graceful fallback to direct API
 - Hard rules (`ignore sender/domain`, per-pattern vibe/style)
 - Local memory for thread context and learned user edits
+- Plugin-like extension loading from `~/.snd/plugins` and `<cwd>/.snd/plugins`
+- Background scheduler command set for macOS (`snd service ...`)
 - Ink TUI for `run`, `inbox`, and `thread` with `--ui auto|rich|plain`
 - Interactive thread editing in CLI (`thread <id> --interactive`) remains available in plain mode
 - Latest-first defaults: inbox shows 20 threads and bootstrap sync focuses on recent threads
@@ -122,6 +124,9 @@ snd thread <threadId> --regen --instruction "shorter, ask one question"
 - `snd config --set-poll 180`
 - `snd memory --set-user "writing:tight, clear, action-oriented"`
 - `snd memory --list-user`
+- `snd plugin list`
+- `snd plugin check`
+- `snd service install|uninstall|start|stop|status|logs`
 - `snd update`
 
 Advanced update options:
@@ -158,6 +163,64 @@ Default UI mode is `auto` (rich in TTY, plain in non-interactive shells/CI).
 `snd run` (rich daemon):
 - `q`: stop daemon and quit
 
+## Agent Runtime
+
+By default, `snd` uses the DeepAgent runtime when available:
+- `agent.enabled: true` in config
+- `deepagents` package installed
+
+Runtime behavior:
+- one cached agent runtime per process
+- persistent local long-term store in sqlite (`agent_store` table)
+- prompt includes user notes, thread notes, and long-term memory snippets
+- fallback to direct chat-completions API if DeepAgent is unavailable/errors
+
+Backward compatibility:
+- legacy `llm.useDeepAgents` is still accepted and mapped to `agent.enabled` if `agent.enabled` is not set.
+
+## Plugins
+
+Plugin roots (default order):
+- global: `~/.snd/plugins`
+- project: `<cwd>/.snd/plugins`
+
+Project overrides global when component ids match.
+
+Supported component folders per root:
+- `tools/*.js|*.mjs|*.cjs`
+- `subagents/*.js|*.mjs|*.cjs`
+- `sandboxes/*.js|*.mjs|*.cjs`
+- `skills/<skill-id>/SKILL.md`
+
+Minimal JS contracts:
+- tool module: `export default async function registerTool(ctx) { ... }`
+- sub-agent module: `export default async function registerSubAgent(ctx) { ... }`
+- sandbox module: `export default async function registerSandbox(ctx) { ... }`
+
+Inspection:
+- `snd plugin list`
+- `snd plugin check` (fails if loader issues are detected)
+
+## Background Service (macOS)
+
+`snd` can run continuously with launchd while your computer is on:
+
+```bash
+snd service install
+snd service status
+snd service logs
+```
+
+Other actions:
+- `snd service start`
+- `snd service stop`
+- `snd service uninstall`
+
+Service defaults:
+- label: `io.snd.agent`
+- command: `snd run --ui plain --interval <config.poll.intervalSeconds>`
+- logs: `~/.snd/log/service.out.log`, `~/.snd/log/service.err.log`
+
 ## Security Model
 
 - All data stays local in `~/.snd/`.
@@ -171,10 +234,6 @@ Default UI mode is `auto` (rich in TTY, plain in non-interactive shells/CI).
 - Secret fallback: `~/.snd/secrets.enc.json`
 
 ## DeepAgents
-
-`snd` attempts to use DeepAgents if:
-- `llm.useDeepAgents: true` in config, and
-- `deepagents` package is installed
 
 Install DeepAgents stack:
 

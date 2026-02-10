@@ -54,6 +54,31 @@ describe('sndConfigSchema null compatibility', () => {
       }),
     ).toThrow();
   });
+
+  it('maps legacy llm.useDeepAgents to agent.enabled when agent block is missing', () => {
+    const config = sndConfigSchema.parse({
+      llm: {
+        useDeepAgents: false,
+      },
+    });
+
+    expect(config.agent.enabled).toBe(false);
+    expect(config.llm.useDeepAgents).toBe(false);
+  });
+
+  it('prefers explicit agent.enabled over legacy llm.useDeepAgents', () => {
+    const config = sndConfigSchema.parse({
+      llm: {
+        useDeepAgents: false,
+      },
+      agent: {
+        enabled: true,
+      },
+    });
+
+    expect(config.agent.enabled).toBe(true);
+    expect(config.llm.useDeepAgents).toBe(true);
+  });
 });
 
 describe('ConfigService defaults and legacy null config', () => {

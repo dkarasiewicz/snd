@@ -37,6 +37,7 @@ export class InitCommand extends CommandRunner {
     process.stdout.write('snd init complete\n');
     process.stdout.write('config: ~/.snd/config.yaml\n');
     process.stdout.write('db: ~/.snd/snd.db\n');
+    process.stdout.write('tip: run `snd service install` on macOS for background sync\n');
   }
 
   @Option({ flags: '--force', description: 'Overwrite default config file if it exists' })

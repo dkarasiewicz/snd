@@ -59,3 +59,11 @@ export type MemoryNote = {
   value: string;
   updatedAt: number;
 };
+
+export type AgentStoreEntry = {
+  id: string;
+  namespace: string;
+  key: string;
+  value: string;
+  updatedAt: number;
+};

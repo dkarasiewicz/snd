@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '../config/config.service.js';
 import { CredentialStoreService } from '../core/credential-store.service.js';
 import { snippet } from '../imap/threading.js';
-import { DeepAgentsAdapterService } from './deepagents-adapter.service.js';
+import { DeepAgentRuntimeService } from './deepagent-runtime.service.js';
 import { DraftRequest, DraftResult } from './types.js';
 
 function trimTo(input: string, maxChars: number): string {
@@ -18,13 +18,13 @@ export class DraftAgentService {
   constructor(
     private readonly configService: ConfigService,
     private readonly credentialStore: CredentialStoreService,
-    private readonly deepAgentsAdapterService: DeepAgentsAdapterService,
+    private readonly deepAgentRuntimeService: DeepAgentRuntimeService,
   ) {}
 
   async generateDraft(request: DraftRequest): Promise<DraftResult> {
     const config = this.configService.load();
 
-    const deepAgentsOutput = await this.deepAgentsAdapterService.maybeGenerate(request, config.llm.useDeepAgents);
+    const deepAgentsOutput = await this.deepAgentRuntimeService.maybeGenerate(request);
     if (deepAgentsOutput) {
       return {
         content: deepAgentsOutput,
