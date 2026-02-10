@@ -7,6 +7,7 @@ import { MemoryCommand } from './cli/commands/memory.command.js';
 import { RuleCommand } from './cli/commands/rule.command.js';
 import { RunCommand } from './cli/commands/run.command.js';
 import { ThreadCommand } from './cli/commands/thread.command.js';
+import { UpdateCommand } from './cli/commands/update.command.js';
 import { DeepAgentsAdapterService } from './agent/deepagents-adapter.service.js';
 import { DraftAgentService } from './agent/draft-agent.service.js';
 import { ConfigService } from './config/config.service.js';
@@ -32,6 +33,7 @@ import { BirdUiService } from './ui/bird-ui.service.js';
     ConfigCommand,
     RuleCommand,
     MemoryCommand,
+    UpdateCommand,
 
     // services
     ConfigService,

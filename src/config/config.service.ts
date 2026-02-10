@@ -5,7 +5,6 @@ import { ensureSndHome, SND_CONFIG_PATH } from '../core/paths.js';
 import { SndConfig, sndConfigSchema } from './schema.js';
 
 const DEFAULT_CONFIG_TEXT = `version: 1
-defaultAccountId:
 poll:
   intervalSeconds: 300
 llm:
@@ -43,7 +42,7 @@ export class ConfigService {
     this.ensureConfigExists();
     const raw = fs.readFileSync(SND_CONFIG_PATH, 'utf8');
     const parsed = YAML.parse(raw);
-    const config = sndConfigSchema.parse(parsed);
+    const config = sndConfigSchema.parse(parsed ?? {});
     this.cache = config;
 
     return config;

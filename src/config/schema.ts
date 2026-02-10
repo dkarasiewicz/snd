@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+function nullAsUndefined<T extends z.ZodTypeAny>(schema: T): z.ZodEffects<z.ZodOptional<T>, z.output<T> | undefined, unknown> {
+  return z.preprocess((value) => (value === null ? undefined : value), schema.optional());
+}
+
 const imapConfigSchema = z.object({
   host: z.string().min(1),
   port: z.number().int().positive(),
@@ -19,7 +23,7 @@ export const accountSchema = z.object({
   email: z.string().email(),
   provider: z.enum(['gmail', 'generic']).default('generic'),
   imap: imapConfigSchema,
-  oauth: gmailOauthSchema.optional(),
+  oauth: nullAsUndefined(gmailOauthSchema),
   rulesProfile: z.string().default('default'),
 });
 
@@ -34,7 +38,7 @@ const pollSchema = z.object({
 
 const llmSchema = z.object({
   provider: z.enum(['openai-compatible']).default('openai-compatible'),
-  baseUrl: z.string().url().optional(),
+  baseUrl: nullAsUndefined(z.string().url()),
   model: z.string().min(1).default('gpt-4o-mini'),
   apiKeySecretKey: z.string().min(1).default('llm:default'),
   useDeepAgents: z.boolean().default(true),
@@ -49,7 +53,7 @@ const rulesSchema = z.object({
 
 export const sndConfigSchema = z.object({
   version: z.literal(1).default(1),
-  defaultAccountId: z.string().optional(),
+  defaultAccountId: nullAsUndefined(z.string()),
   poll: pollSchema.default({ intervalSeconds: 300 }),
   llm: llmSchema.default({
     provider: 'openai-compatible',

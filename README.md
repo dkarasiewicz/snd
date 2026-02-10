@@ -38,6 +38,12 @@ One-line installer (for your public repo URL):
 curl -fsSL https://raw.githubusercontent.com/dkarasiewicz/snd/main/scripts/install.sh | sh
 ```
 
+Update an existing installation:
+
+```bash
+snd update
+```
+
 For local dev:
 
 ```bash
@@ -113,6 +119,12 @@ snd thread <threadId> --regen --instruction "shorter, ask one question"
 - `snd config --set-poll 180`
 - `snd memory --set-user "writing:tight, clear, action-oriented"`
 - `snd memory --list-user`
+- `snd update`
+
+Advanced update options:
+- `snd update --repo-url <git-url>`
+- `snd update --install-dir <path> --bin-dir <path>`
+- `snd update --script-url <raw-install-script-url-or-local-path>`
 
 ## Security Model
 

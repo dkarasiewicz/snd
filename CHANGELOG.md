@@ -7,11 +7,18 @@ and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-02-10
+
 ### Fixed
 - `scripts/install.sh` now works with `curl ... | sh` by using POSIX-compatible shell syntax.
 - Node version detection in installer no longer fails due to escaped quote parsing.
 - Installer now creates a launcher script that executes from install dir, so runtime deps resolve correctly.
 - CLI bootstrap now imports `reflect-metadata`; decorator metadata emit is enabled for Nest Commander runtime stability.
+- Config parsing now tolerates legacy `null` values for optional fields (`defaultAccountId`, `llm.baseUrl`, `account.oauth`) and normalizes them.
+- Default generated config no longer emits `defaultAccountId: null`, avoiding startup failures in `snd init --wizard`.
+
+### Added
+- `snd update` command to fetch and execute the installer for in-place CLI upgrades.
 
 ## [0.1.0] - 2026-02-10
 
