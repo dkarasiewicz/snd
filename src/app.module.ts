@@ -17,10 +17,10 @@ import { SyncService } from './core/sync.service.js';
 import { ThreadService } from './core/thread.service.js';
 import { GmailOauthService } from './imap/gmail-oauth.service.js';
 import { ImapClientService } from './imap/imap-client.service.js';
+import { OauthCallbackService } from './imap/oauth-callback.service.js';
 import { MemoryService } from './memory/memory.service.js';
 import { RuleEngineService } from './rules/rule-engine.service.js';
 import { DatabaseService } from './storage/database.service.js';
-import { BirdUiService } from './ui/bird-ui.service.js';
 
 @Module({
   providers: [
@@ -40,6 +40,7 @@ import { BirdUiService } from './ui/bird-ui.service.js';
     CredentialStoreService,
     DatabaseService,
     GmailOauthService,
+    OauthCallbackService,
     ImapClientService,
     RuleEngineService,
     MemoryService,
@@ -48,7 +49,6 @@ import { BirdUiService } from './ui/bird-ui.service.js';
     SyncService,
     RunnerService,
     ThreadService,
-    BirdUiService,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,6 @@
 {
   "name": "snd",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "snd: local CLI that syncs IMAP threads and drafts replies with an LLM",
   "type": "module",
   "main": "dist/index.js",

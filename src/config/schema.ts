@@ -36,6 +36,19 @@ const pollSchema = z.object({
   intervalSeconds: z.number().int().min(30).max(86400).default(300),
 });
 
+const syncSchema = z.object({
+  bootstrapThreadLimit: z.number().int().min(1).max(500).default(20),
+  bootstrapMessageWindow: z.number().int().min(20).max(5000).default(300),
+});
+
+const inboxSchema = z.object({
+  defaultLimit: z.number().int().min(1).max(200).default(20),
+});
+
+const uiSchema = z.object({
+  mode: z.enum(['auto', 'rich', 'plain']).default('auto'),
+});
+
 const llmSchema = z.object({
   provider: z.enum(['openai-compatible']).default('openai-compatible'),
   baseUrl: nullAsUndefined(z.string().url()),
@@ -55,6 +68,16 @@ export const sndConfigSchema = z.object({
   version: z.literal(1).default(1),
   defaultAccountId: nullAsUndefined(z.string()),
   poll: pollSchema.default({ intervalSeconds: 300 }),
+  sync: syncSchema.default({
+    bootstrapThreadLimit: 20,
+    bootstrapMessageWindow: 300,
+  }),
+  inbox: inboxSchema.default({
+    defaultLimit: 20,
+  }),
+  ui: uiSchema.default({
+    mode: 'auto',
+  }),
   llm: llmSchema.default({
     provider: 'openai-compatible',
     model: 'gpt-4o-mini',

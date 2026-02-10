@@ -1,13 +1,18 @@
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { Command, CommandRunner, Option } from 'nest-commander';
+import { ConfigService } from '../../config/config.service.js';
 import { ThreadService } from '../../core/thread.service.js';
+import { renderThreadHeader } from '../../ui/cli-render.js';
+import { resolveUiMode } from '../../ui/ui-mode.js';
+import type { UiMode } from '../../ui/ui-mode.js';
 
 type ThreadOptions = {
   regen?: boolean;
   instruction?: string;
   interactive?: boolean;
   done?: boolean;
+  ui?: UiMode;
 };
 
 @Command({
@@ -16,12 +21,17 @@ type ThreadOptions = {
   arguments: '<threadId>',
 })
 export class ThreadCommand extends CommandRunner {
-  constructor(private readonly threadService: ThreadService) {
+  constructor(
+    private readonly threadService: ThreadService,
+    private readonly configService: ConfigService,
+  ) {
     super();
   }
 
   override async run(params: string[], options?: ThreadOptions): Promise<void> {
     const threadId = params[0];
+    const config = this.configService.load();
+    const mode = resolveUiMode(config.ui.mode, options?.ui);
     if (!threadId) {
       throw new Error('threadId is required');
     }
@@ -39,11 +49,11 @@ export class ThreadCommand extends CommandRunner {
     }
 
     if (options?.interactive) {
-      await this.runInteractive(threadId);
+      await this.runInteractive(threadId, mode);
       return;
     }
 
-    this.printThread(threadId);
+    this.printThread(threadId, mode);
   }
 
   @Option({ flags: '--regen', description: 'Regenerate draft for this thread' })
@@ -66,15 +76,22 @@ export class ThreadCommand extends CommandRunner {
     return true;
   }
 
-  private printThread(threadId: string): void {
+  @Option({ flags: '--ui [mode]', description: 'UI mode: auto, rich, plain' })
+  parseUi(value: string): UiMode {
+    if (value !== 'auto' && value !== 'rich' && value !== 'plain') {
+      throw new Error('--ui must be one of auto, rich, plain');
+    }
+
+    return value;
+  }
+
+  private printThread(threadId: string, mode: 'rich' | 'plain'): void {
     const view = this.threadService.getThreadView(threadId);
     if (!view.thread) {
       throw new Error(`Thread ${threadId} not found`);
     }
 
-    process.stdout.write(`thread: ${view.thread.subject}\n`);
-    process.stdout.write(`from: ${view.thread.lastSender}\n`);
-    process.stdout.write(`needs_reply: ${view.thread.needsReply}\n`);
+    process.stdout.write(`${renderThreadHeader(mode, view.thread)}\n`);
     process.stdout.write('--- messages ---\n');
 
     for (const message of view.messages.slice(-8)) {
@@ -86,11 +103,11 @@ export class ThreadCommand extends CommandRunner {
     process.stdout.write(`${view.draft?.content ?? '(none)'}\n`);
   }
 
-  private async runInteractive(threadId: string): Promise<void> {
+  private async runInteractive(threadId: string, mode: 'rich' | 'plain'): Promise<void> {
     const rl = readline.createInterface({ input, output });
 
     try {
-      this.printThread(threadId);
+      this.printThread(threadId, mode);
       process.stdout.write(
         'interactive commands: :regen [instruction], :set <text>, :append <text>, :setm, :appendm, :done, :show, :quit\n',
       );
@@ -107,7 +124,7 @@ export class ThreadCommand extends CommandRunner {
         }
 
         if (line === ':show') {
-          this.printThread(threadId);
+          this.printThread(threadId, mode);
           continue;
         }
 

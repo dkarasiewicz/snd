@@ -7,6 +7,13 @@ import { SndConfig, sndConfigSchema } from './schema.js';
 const DEFAULT_CONFIG_TEXT = `version: 1
 poll:
   intervalSeconds: 300
+sync:
+  bootstrapThreadLimit: 20
+  bootstrapMessageWindow: 300
+inbox:
+  defaultLimit: 20
+ui:
+  mode: auto
 llm:
   provider: openai-compatible
   model: gpt-4o-mini

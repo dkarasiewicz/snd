@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DraftAgentService } from '../agent/draft-agent.service.js';
 import { ConfigService } from '../config/config.service.js';
+import { selectLatestBootstrapThreadKeys } from './bootstrap.js';
 import { withRetry } from './retry.js';
 import { ImapClientService } from '../imap/imap-client.service.js';
 import { cleanEmailBody } from '../imap/body-cleaner.js';
@@ -60,8 +61,12 @@ export class SyncService {
       });
 
       const syncState = this.databaseService.getSyncState(account.id);
+      const isBootstrap = syncState.lastUid === 0;
       const pull = await withRetry(
-        () => this.imapClientService.fetchNewMessages(account, syncState.lastUid),
+        () =>
+          this.imapClientService.fetchNewMessages(account, syncState.lastUid, {
+            bootstrapMessageWindow: isBootstrap ? config.sync.bootstrapMessageWindow : undefined,
+          }),
         {
           label: `imap:${account.id}`,
           attempts: 3,
@@ -74,8 +79,15 @@ export class SyncService {
       let ignored = 0;
 
       const dbRules = this.databaseService.listRules();
+      const bootstrapThreadKeys = isBootstrap
+        ? selectLatestBootstrapThreadKeys(pull.messages, config.sync.bootstrapThreadLimit)
+        : null;
 
       for (const message of pull.messages) {
+        if (bootstrapThreadKeys && !bootstrapThreadKeys.has(deriveThreadKey(message))) {
+          continue;
+        }
+
         if (this.databaseService.hasMessage(account.id, message.messageId)) {
           continue;
         }

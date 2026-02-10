@@ -10,6 +10,10 @@ type OAuthSecret = {
   refreshToken: string;
 };
 
+export type FetchNewMessagesOptions = {
+  bootstrapMessageWindow?: number;
+};
+
 function htmlToText(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -44,12 +48,20 @@ export class ImapClientService {
     private readonly gmailOauthService: GmailOauthService,
   ) {}
 
-  async fetchNewMessages(account: SndAccountConfig, lastUid: number): Promise<{ messages: ImapMessage[]; maxUid: number }> {
+  async fetchNewMessages(
+    account: SndAccountConfig,
+    lastUid: number,
+    options?: FetchNewMessagesOptions,
+  ): Promise<{ messages: ImapMessage[]; maxUid: number }> {
     const client = await this.connect(account);
 
     try {
-      await client.mailboxOpen('INBOX');
-      const range = `${Math.max(1, lastUid + 1)}:*`;
+      const mailbox = await client.mailboxOpen('INBOX');
+      const bootstrapWindow = options?.bootstrapMessageWindow ?? 0;
+      const isBootstrap = lastUid === 0 && bootstrapWindow > 0;
+      const range = isBootstrap
+        ? `${Math.max(1, mailbox.exists - bootstrapWindow + 1)}:*`
+        : `${Math.max(1, lastUid + 1)}:*`;
       const messages: ImapMessage[] = [];
       let maxUid = lastUid;
 
@@ -131,6 +143,7 @@ export class ImapClientService {
         host: account.imap.host,
         port: account.imap.port,
         secure: account.imap.secure,
+        logger: false,
         auth: {
           user: account.imap.username,
           pass: password,
@@ -161,6 +174,7 @@ export class ImapClientService {
       host: account.imap.host,
       port: account.imap.port,
       secure: account.imap.secure,
+      logger: false,
       auth: {
         user: account.imap.username,
         accessToken: token.accessToken,

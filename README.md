@@ -17,7 +17,8 @@ It is intentionally brief and autonomous:
 - Hard rules (`ignore sender/domain`, per-pattern vibe/style)
 - Local memory for thread context and learned user edits
 - Interactive thread editing in CLI (`thread <id> --interactive`)
-- Lightweight animated bird status indicator
+- Structured CLI output for `run`, `inbox`, and `thread` with `--ui auto|rich|plain`
+- Latest-first defaults: inbox shows 20 threads and bootstrap sync focuses on recent threads
 - Email body cleanup (quoted-reply/signature trimming)
 - Retry/backoff on IMAP and LLM network calls
 
@@ -77,6 +78,8 @@ snd auth --llm-token
 snd auth --account main --gmail
 ```
 
+Default flow opens browser and captures callback on localhost automatically.
+
 - Generic IMAP password/app-password:
 
 ```bash
@@ -109,9 +112,9 @@ snd thread <threadId> --regen --instruction "shorter, ask one question"
 - `snd auth --llm-token`
 - `snd auth --account <id> --gmail`
 - `snd auth --account <id> --imap-password`
-- `snd run [--once] [--interval 300] [--account <id>]`
-- `snd inbox [--limit 25]`
-- `snd thread <threadId> [--interactive|--regen|--done]`
+- `snd run [--once] [--interval 300] [--account <id>] [--ui auto|rich|plain] [--verbose]`
+- `snd inbox [--limit 20] [--ui auto|rich|plain]`
+- `snd thread <threadId> [--interactive|--regen|--done] [--ui auto|rich|plain]`
 - `snd rule --list`
 - `snd rule --add-ignore-sender noreply@foo.com`
 - `snd rule --add-ignore-domain foo.com`
@@ -125,6 +128,10 @@ Advanced update options:
 - `snd update --repo-url <git-url>`
 - `snd update --install-dir <path> --bin-dir <path>`
 - `snd update --script-url <raw-install-script-url-or-local-path>`
+
+Advanced Gmail OAuth options:
+- `snd auth --account <id> --gmail --no-local-server`
+- `snd auth --account <id> --gmail --listen-timeout 180`
 
 ## Security Model
 

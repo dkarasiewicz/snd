@@ -2,6 +2,13 @@ version: 1
 defaultAccountId: main
 poll:
   intervalSeconds: 300
+sync:
+  bootstrapThreadLimit: 20
+  bootstrapMessageWindow: 300
+inbox:
+  defaultLimit: 20
+ui:
+  mode: auto
 llm:
   provider: openai-compatible
   baseUrl: https://api.openai.com/v1
@@ -30,4 +37,4 @@ accounts:
     oauth:
       clientId: YOUR_GOOGLE_CLIENT_ID
       clientSecret: YOUR_GOOGLE_CLIENT_SECRET
-      redirectUri: http://localhost
+      redirectUri: http://127.0.0.1:53682/oauth2callback

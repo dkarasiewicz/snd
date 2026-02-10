@@ -1,8 +1,10 @@
+import { spawn } from 'node:child_process';
 import { Command, CommandRunner, Option } from 'nest-commander';
 import { ConfigService } from '../../config/config.service.js';
 import { CredentialStoreService } from '../../core/credential-store.service.js';
 import { ask } from '../../core/prompt.js';
 import { GmailOauthService } from '../../imap/gmail-oauth.service.js';
+import { OauthCallbackService } from '../../imap/oauth-callback.service.js';
 
 type AuthOptions = {
   account?: string;
@@ -10,6 +12,8 @@ type AuthOptions = {
   imapPassword?: boolean;
   llmToken?: boolean;
   code?: string;
+  noLocalServer?: boolean;
+  listenTimeout?: number;
 };
 
 @Command({
@@ -21,6 +25,7 @@ export class AuthCommand extends CommandRunner {
     private readonly configService: ConfigService,
     private readonly credentialStoreService: CredentialStoreService,
     private readonly gmailOauthService: GmailOauthService,
+    private readonly oauthCallbackService: OauthCallbackService,
   ) {
     super();
   }
@@ -65,15 +70,41 @@ export class AuthCommand extends CommandRunner {
         throw new Error(`Account ${account.id} has no oauth config. Add oauth.clientId/clientSecret/redirectUri first.`);
       }
 
-      const { url } = this.gmailOauthService.createAuthUrl({
+      const { url, state } = this.gmailOauthService.createAuthUrl({
         clientId: account.oauth.clientId,
         redirectUri: account.oauth.redirectUri,
       });
+      let code = options.code;
+      const timeoutSeconds = options.listenTimeout ?? 120;
 
-      process.stdout.write('Open this URL in browser and authorize:\n');
-      process.stdout.write(`${url}\n`);
+      if (!code && !options.noLocalServer) {
+        process.stdout.write(`Opening browser for OAuth: ${url}\n`);
+        const opened = openAuthUrl(url);
+        if (!opened) {
+          process.stdout.write('Could not auto-open browser. Open URL manually.\n');
+        }
 
-      const code = options.code ?? (await ask('Paste OAuth code from redirect URL (code=...): '));
+        process.stdout.write(`Waiting for callback on ${account.oauth.redirectUri} (${timeoutSeconds}s timeout)...\n`);
+        try {
+          const callback = await this.oauthCallbackService.waitForCode({
+            redirectUri: account.oauth.redirectUri,
+            state,
+            timeoutMs: timeoutSeconds * 1000,
+          });
+          code = callback.code;
+          process.stdout.write('OAuth callback received.\n');
+        } catch (error) {
+          process.stdout.write(`Local callback failed: ${(error as Error).message}\n`);
+          process.stdout.write('Falling back to manual code paste.\n');
+        }
+      }
+
+      if (!code) {
+        process.stdout.write('Open this URL in browser and authorize:\n');
+        process.stdout.write(`${url}\n`);
+        code = await ask('Paste OAuth code from redirect URL (code=...): ');
+      }
+
       if (!code) {
         throw new Error('Missing OAuth code. Aborted.');
       }
@@ -124,5 +155,42 @@ export class AuthCommand extends CommandRunner {
   @Option({ flags: '--code [oauthCode]', description: 'OAuth code for non-interactive auth' })
   parseCode(value: string): string {
     return value;
+  }
+
+  @Option({ flags: '--no-local-server', description: 'Disable localhost callback and use manual OAuth code copy/paste' })
+  parseNoLocalServer(): boolean {
+    return true;
+  }
+
+  @Option({ flags: '--listen-timeout [seconds]', description: 'Timeout for localhost OAuth callback listener' })
+  parseListenTimeout(value: string): number {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 5 || parsed > 900) {
+      throw new Error('--listen-timeout must be an integer between 5 and 900');
+    }
+
+    return parsed;
+  }
+}
+
+function openAuthUrl(url: string): boolean {
+  try {
+    if (process.platform === 'darwin') {
+      const child = spawn('open', [url], { stdio: 'ignore', detached: true });
+      child.unref();
+      return true;
+    }
+
+    if (process.platform === 'win32') {
+      const child = spawn('cmd', ['/c', 'start', '', url], { stdio: 'ignore', detached: true });
+      child.unref();
+      return true;
+    }
+
+    const child = spawn('xdg-open', [url], { stdio: 'ignore', detached: true });
+    child.unref();
+    return true;
+  } catch {
+    return false;
   }
 }

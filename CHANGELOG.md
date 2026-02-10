@@ -7,6 +7,21 @@ and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-02-10
+
+### Added
+- Localhost OAuth callback flow for Gmail auth in `snd auth --account <id> --gmail`, with manual fallback and timeout controls.
+- UI mode controls (`--ui auto|rich|plain`) for `run`, `inbox`, and `thread`.
+- New config defaults for `sync.bootstrapThreadLimit`, `sync.bootstrapMessageWindow`, `inbox.defaultLimit`, and `ui.mode`.
+
+### Changed
+- `inbox` now defaults to 20 threads via config (`inbox.defaultLimit`).
+- Sync bootstrap now focuses on recent threads on first run (empty sync state).
+
+### Fixed
+- IMAP transport debug logs are now disabled by default to avoid noisy terminal output.
+- `run` output is now clean and informative without animated bird frames.
+
 ## [0.1.1] - 2026-02-10
 
 ### Fixed

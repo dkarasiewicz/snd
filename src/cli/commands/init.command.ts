@@ -81,7 +81,8 @@ export class InitCommand extends CommandRunner {
     if (auth === 'oauth2') {
       const clientId = await ask('oauth clientId (blank for later): ');
       const clientSecret = await ask('oauth clientSecret (blank for later): ');
-      const redirectUri = (await ask('oauth redirectUri (default: http://localhost): ')) || 'http://localhost';
+      const redirectUri = (await ask('oauth redirectUri (default: http://127.0.0.1:53682/oauth2callback): '))
+        || 'http://127.0.0.1:53682/oauth2callback';
       if (clientId && clientSecret) {
         oauth = { clientId, clientSecret, redirectUri };
       }

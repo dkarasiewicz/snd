@@ -6,6 +6,9 @@ const baseConfig: SndConfig = {
   version: 1,
   defaultAccountId: 'main',
   poll: { intervalSeconds: 300 },
+  sync: { bootstrapThreadLimit: 20, bootstrapMessageWindow: 300 },
+  inbox: { defaultLimit: 20 },
+  ui: { mode: 'auto' },
   llm: {
     provider: 'openai-compatible',
     model: 'gpt-4o-mini',
