@@ -5,6 +5,14 @@ All notable changes to `snd` will be documented in this file.
 The format is based on Keep a Changelog,
 and this project adheres to Semantic Versioning.
 
+## [Unreleased]
+
+### Fixed
+- `scripts/install.sh` now works with `curl ... | sh` by using POSIX-compatible shell syntax.
+- Node version detection in installer no longer fails due to escaped quote parsing.
+- Installer now creates a launcher script that executes from install dir, so runtime deps resolve correctly.
+- CLI bootstrap now imports `reflect-metadata`; decorator metadata emit is enabled for Nest Commander runtime stability.
+
 ## [0.1.0] - 2026-02-10
 
 ### Added
