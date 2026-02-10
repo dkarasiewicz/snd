@@ -7,6 +7,20 @@ and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-02-10
+
+### Added
+- Ink-based TUI screens for `run`, `inbox`, and `thread` in rich mode, including keyboard-driven triage and thread actions.
+- View-model regression tests for new UI formatting and key matcher helpers.
+
+### Changed
+- `thread <id>` now opens the rich Ink thread panel when rich UI mode is active.
+- Retry backoff logs are downgraded from warn to debug to keep terminal output readable during transient retries.
+- README now includes a TUI shortcuts cheat sheet and richer `--ui` guidance.
+
+### Fixed
+- OpenAI-compatible draft generation no longer sends `temperature`, which fixes unsupported-parameter failures on `gpt-5-mini`.
+
 ## [0.1.2] - 2026-02-10
 
 ### Added

@@ -5,6 +5,8 @@ import { ConfigService } from '../../config/config.service.js';
 import { ThreadService } from '../../core/thread.service.js';
 import { renderThreadHeader } from '../../ui/cli-render.js';
 import { resolveUiMode } from '../../ui/ui-mode.js';
+import { renderThreadRich } from '../../ui/ui-renderer.js';
+import { mapThreadView } from '../../ui/view-models/thread-vm.js';
 import type { UiMode } from '../../ui/ui-mode.js';
 
 type ThreadOptions = {
@@ -50,6 +52,34 @@ export class ThreadCommand extends CommandRunner {
 
     if (options?.interactive) {
       await this.runInteractive(threadId, mode);
+      return;
+    }
+
+    if (mode === 'rich') {
+      await renderThreadRich({
+        threadId,
+        loadThread: async (targetThreadId) => {
+          const view = this.threadService.getThreadView(targetThreadId);
+          if (!view.thread) {
+            throw new Error(`Thread ${targetThreadId} not found`);
+          }
+
+          return mapThreadView({
+            thread: view.thread,
+            messages: view.messages,
+            draft: view.draft,
+          });
+        },
+        regenerateDraft: async (targetThreadId) => {
+          await this.threadService.regenerateDraft(targetThreadId);
+        },
+        markDone: async (targetThreadId) => {
+          this.threadService.markDone(targetThreadId);
+        },
+        saveDraft: async (targetThreadId, content) => {
+          this.threadService.saveEditedDraft(targetThreadId, content);
+        },
+      });
       return;
     }
 

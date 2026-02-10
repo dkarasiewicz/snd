@@ -51,7 +51,6 @@ export class DraftAgentService {
       },
       body: JSON.stringify({
         model: request.model,
-        temperature: 0.4,
         messages: [
           {
             role: 'system',

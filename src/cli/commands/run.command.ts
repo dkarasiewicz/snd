@@ -1,14 +1,8 @@
 import { Command, CommandRunner, Option } from 'nest-commander';
 import { ConfigService } from '../../config/config.service.js';
 import { RunnerService } from '../../core/runner.service.js';
-import {
-  renderRunCycleError,
-  renderRunCycleSkip,
-  renderRunCycleStart,
-  renderRunCycleStats,
-  renderStop,
-} from '../../ui/cli-render.js';
 import { resolveUiMode } from '../../ui/ui-mode.js';
+import { renderRunRich, UiRenderer } from '../../ui/ui-renderer.js';
 import type { UiMode } from '../../ui/ui-mode.js';
 
 type RunOptions = {
@@ -36,15 +30,26 @@ export class RunCommand extends CommandRunner {
     const interval = options?.interval ?? config.poll.intervalSeconds;
     const mode = resolveUiMode(config.ui.mode, options?.ui);
 
+    if (mode === 'rich') {
+      await renderRunRich({
+        runnerService: this.runnerService,
+        intervalSeconds: interval,
+        accountId: options?.account,
+        once: Boolean(options?.once),
+        verbose: options?.verbose,
+      });
+      return;
+    }
+
     if (options?.once) {
       const startedAt = Date.now();
-      process.stdout.write(`${renderRunCycleStart(mode, options.account)}\n`);
+      process.stdout.write(`${UiRenderer.renderRunCycleStart(mode, options.account)}\n`);
 
       try {
         const stats = await this.runnerService.runOnce(options.account);
-        process.stdout.write(`${renderRunCycleStats(mode, stats, Date.now() - startedAt)}\n`);
+        process.stdout.write(`${UiRenderer.renderRunCycleStats(mode, stats, Date.now() - startedAt)}\n`);
       } catch (error) {
-        process.stdout.write(`${renderRunCycleError(mode, error as Error)}\n`);
+        process.stdout.write(`${UiRenderer.renderRunCycleError(mode, error as Error)}\n`);
         throw error;
       }
       return;
@@ -52,29 +57,33 @@ export class RunCommand extends CommandRunner {
 
     process.stdout.write(`snd daemon started (interval=${interval}s)\n`);
     let cycleStartedAt = Date.now();
+    let resolveStop = (): void => undefined;
     this.runnerService.startDaemon(interval, options?.account, {
       onCycleStart: () => {
         cycleStartedAt = Date.now();
         if (options?.verbose) {
-          process.stdout.write(`${renderRunCycleStart(mode, options.account)}\n`);
+          process.stdout.write(`${UiRenderer.renderRunCycleStart(mode, options.account)}\n`);
         }
       },
       onCycleSuccess: (stats) => {
-        process.stdout.write(`${renderRunCycleStats(mode, stats, Date.now() - cycleStartedAt)}\n`);
+        process.stdout.write(`${UiRenderer.renderRunCycleStats(mode, stats, Date.now() - cycleStartedAt)}\n`);
       },
       onCycleError: (error) => {
-        process.stdout.write(`${renderRunCycleError(mode, error)}\n`);
+        process.stdout.write(`${UiRenderer.renderRunCycleError(mode, error)}\n`);
       },
       onCycleSkip: () => {
         if (options?.verbose) {
-          process.stdout.write(`${renderRunCycleSkip(mode)}\n`);
+          process.stdout.write(`${UiRenderer.renderRunCycleSkip(mode)}\n`);
         }
       },
       onStop: () => {
-        process.stdout.write(`${renderStop(mode)}\n`);
+        process.stdout.write(`${UiRenderer.renderStop(mode)}\n`);
+        resolveStop();
       },
     });
-    await new Promise(() => undefined);
+    await new Promise<void>((resolve) => {
+      resolveStop = resolve;
+    });
   }
 
   @Option({ flags: '--once', description: 'Run one sync cycle and exit' })

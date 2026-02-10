@@ -16,8 +16,8 @@ It is intentionally brief and autonomous:
 - Optional DeepAgents integration (auto-detected via `deepagents` package)
 - Hard rules (`ignore sender/domain`, per-pattern vibe/style)
 - Local memory for thread context and learned user edits
-- Interactive thread editing in CLI (`thread <id> --interactive`)
-- Structured CLI output for `run`, `inbox`, and `thread` with `--ui auto|rich|plain`
+- Ink TUI for `run`, `inbox`, and `thread` with `--ui auto|rich|plain`
+- Interactive thread editing in CLI (`thread <id> --interactive`) remains available in plain mode
 - Latest-first defaults: inbox shows 20 threads and bootstrap sync focuses on recent threads
 - Email body cleanup (quoted-reply/signature trimming)
 - Retry/backoff on IMAP and LLM network calls
@@ -132,6 +132,31 @@ Advanced update options:
 Advanced Gmail OAuth options:
 - `snd auth --account <id> --gmail --no-local-server`
 - `snd auth --account <id> --gmail --listen-timeout 180`
+
+## TUI Shortcuts
+
+Default UI mode is `auto` (rich in TTY, plain in non-interactive shells/CI).
+
+`snd inbox` (rich):
+- `j/k` or `↑/↓`: move selection
+- `enter`: open selected thread
+- `r`: regenerate selected draft
+- `d`: mark selected thread done
+- `R`: refresh inbox
+- `?`: toggle help
+- `q`: quit
+
+`snd thread <id>` (rich):
+- `e`: edit draft inline
+- `ctrl+s`: save draft (while editing)
+- `esc`: cancel editing
+- `r`: regenerate draft
+- `d`: mark done
+- `?`: toggle help
+- `q`: back/quit
+
+`snd run` (rich daemon):
+- `q`: stop daemon and quit
 
 ## Security Model
 

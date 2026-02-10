@@ -13,6 +13,9 @@ export type RunnerHandlers = {
 export class RunnerService {
   private isRunning = false;
   private syncInFlight = false;
+  private timer: NodeJS.Timeout | null = null;
+  private signalHandler: (() => void) | null = null;
+  private handlers: RunnerHandlers | null = null;
 
   constructor(private readonly syncService: SyncService) {}
 
@@ -26,6 +29,7 @@ export class RunnerService {
     }
 
     this.isRunning = true;
+    this.handlers = handlers ?? null;
 
     const tick = async (): Promise<void> => {
       if (!this.isRunning) {
@@ -33,37 +37,54 @@ export class RunnerService {
       }
 
       if (this.syncInFlight) {
-        handlers?.onCycleSkip?.();
+        this.handlers?.onCycleSkip?.();
         return;
       }
 
       this.syncInFlight = true;
-      handlers?.onCycleStart?.();
+      this.handlers?.onCycleStart?.();
 
       try {
         const stats = await this.syncService.runOnce(accountId);
-        handlers?.onCycleSuccess?.(stats);
+        this.handlers?.onCycleSuccess?.(stats);
       } catch (error) {
-        handlers?.onCycleError?.(error as Error);
+        this.handlers?.onCycleError?.(error as Error);
       } finally {
         this.syncInFlight = false;
       }
     };
 
     void tick();
-    const timer = setInterval(() => {
+    this.timer = setInterval(() => {
       void tick();
     }, intervalSeconds * 1000);
 
-    process.on('SIGINT', () => {
-      if (!this.isRunning) {
-        return;
-      }
+    this.signalHandler = () => {
+      this.stopDaemon();
+    };
 
-      this.isRunning = false;
-      clearInterval(timer);
-      handlers?.onStop?.();
-      process.exit(0);
-    });
+    process.on('SIGINT', this.signalHandler);
+    process.on('SIGTERM', this.signalHandler);
+  }
+
+  stopDaemon(): void {
+    if (!this.isRunning) {
+      return;
+    }
+
+    this.isRunning = false;
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+
+    if (this.signalHandler) {
+      process.off('SIGINT', this.signalHandler);
+      process.off('SIGTERM', this.signalHandler);
+      this.signalHandler = null;
+    }
+
+    this.handlers?.onStop?.();
+    this.handlers = null;
   }
 }

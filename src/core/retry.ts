@@ -30,7 +30,7 @@ export async function withRetry<T>(
       }
 
       const delayMs = Math.min(maxDelayMs, options.baseDelayMs * 2 ** (attempt - 1));
-      options.logger?.warn(
+      options.logger?.debug(
         `${options.label} failed (attempt ${attempt}/${attempts}): ${(error as Error).message}; retrying in ${delayMs}ms`,
       );
       await delay(delayMs);
