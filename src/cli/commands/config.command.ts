@@ -1,10 +1,12 @@
 import { Command, CommandRunner, Option } from 'nest-commander';
 import YAML from 'yaml';
 import { ConfigService } from '../../config/config.service.js';
+import { DatabaseService } from '../../storage/database.service.js';
 
 type ConfigOptions = {
   setPoll?: number;
   setDefaultAccount?: string;
+  resetAccount?: string;
 };
 
 @Command({
@@ -12,7 +14,10 @@ type ConfigOptions = {
   description: 'Inspect or update snd config',
 })
 export class ConfigCommand extends CommandRunner {
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly databaseService: DatabaseService,
+  ) {
     super();
   }
 
@@ -38,6 +43,22 @@ export class ConfigCommand extends CommandRunner {
       return;
     }
 
+    if (options?.resetAccount) {
+      const config = this.configService.load();
+      const exists = config.accounts.some((entry) => entry.id === options.resetAccount);
+      if (!exists) {
+        throw new Error(`Account ${options.resetAccount} not found in config`);
+      }
+
+      const result = this.databaseService.resetAccountData(options.resetAccount);
+      process.stdout.write(`account ${options.resetAccount} local state reset\n`);
+      process.stdout.write(
+        `deleted: messages=${result.messagesDeleted} threads=${result.threadsDeleted} drafts=${result.draftsDeleted} sync=${result.syncStateDeleted} memory=${result.memoryNotesDeleted} store=${result.agentStoreDeleted}\n`,
+      );
+      process.stdout.write('credentials preserved (keychain/secret store untouched)\n');
+      return;
+    }
+
     const config = this.configService.load();
     process.stdout.write(`${YAML.stringify(config)}\n`);
   }
@@ -54,6 +75,14 @@ export class ConfigCommand extends CommandRunner {
 
   @Option({ flags: '--set-default-account [accountId]', description: 'Set default account id' })
   parseSetDefaultAccount(value: string): string {
+    return value;
+  }
+
+  @Option({
+    flags: '--reset-account [accountId]',
+    description: 'Reset local synced data for account (keeps credentials)',
+  })
+  parseResetAccount(value: string): string {
     return value;
   }
 }

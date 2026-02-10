@@ -7,6 +7,15 @@ and this project adheres to Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-02-10
+
+### Added
+- `snd config --reset-account <id>` to clear local synced account state without touching stored credentials.
+
+### Changed
+- Bootstrap sync now prioritizes newest threads from a recent mailbox window, while periodic sync fetches from last seen UID.
+- Inbox status bar rendering now keeps left/right segments readable on one line.
+
 ## [0.2.0] - 2026-02-10
 
 ### Added

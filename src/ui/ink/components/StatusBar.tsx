@@ -8,10 +8,13 @@ type StatusBarProps = {
 };
 
 export function StatusBar({ left, right }: StatusBarProps): React.JSX.Element {
+  const combined = right ? `${left} | ${right}` : left;
+
   return (
-    <Box borderStyle="single" borderColor={theme.colors.muted} paddingX={1} justifyContent="space-between">
-      <Text color={theme.colors.muted}>{left}</Text>
-      <Text color={theme.colors.muted}>{right ?? ''}</Text>
+    <Box borderStyle="single" borderColor={theme.colors.muted} paddingX={1}>
+      <Text color={theme.colors.muted} wrap="truncate-end">
+        {combined}
+      </Text>
     </Box>
   );
 }

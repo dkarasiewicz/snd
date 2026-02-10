@@ -903,4 +903,65 @@ export class DatabaseService implements OnModuleDestroy {
       .run(namespace, key);
     return result.changes > 0;
   }
+
+  resetAccountData(accountId: string): {
+    messagesDeleted: number;
+    threadsDeleted: number;
+    draftsDeleted: number;
+    memoryNotesDeleted: number;
+    syncStateDeleted: number;
+    accountRowDeleted: number;
+    agentStoreDeleted: number;
+  } {
+    const threadRows = this.db
+      .prepare('SELECT id FROM threads WHERE account_id = ?')
+      .all(accountId) as Array<{ id: string }>;
+    const threadIds = threadRows.map((row) => row.id);
+
+    const result = this.db.transaction(() => {
+      let draftsDeleted = 0;
+      if (threadIds.length > 0) {
+        const placeholders = threadIds.map(() => '?').join(', ');
+        draftsDeleted = this.db
+          .prepare(`DELETE FROM drafts WHERE thread_id IN (${placeholders})`)
+          .run(...threadIds).changes;
+      }
+
+      const messagesDeleted = this.db
+        .prepare('DELETE FROM messages WHERE account_id = ?')
+        .run(accountId).changes;
+      const threadsDeleted = this.db
+        .prepare('DELETE FROM threads WHERE account_id = ?')
+        .run(accountId).changes;
+      const syncStateDeleted = this.db
+        .prepare('DELETE FROM sync_state WHERE account_id = ?')
+        .run(accountId).changes;
+      const accountRowDeleted = this.db
+        .prepare('DELETE FROM accounts WHERE id = ?')
+        .run(accountId).changes;
+
+      let memoryNotesDeleted = 0;
+      for (const threadId of threadIds) {
+        memoryNotesDeleted += this.db
+          .prepare("DELETE FROM memory_notes WHERE scope = 'thread' AND key LIKE ?")
+          .run(`${threadId}:%`).changes;
+      }
+
+      const agentStoreDeleted = this.db
+        .prepare("DELETE FROM agent_store WHERE namespace LIKE ? OR namespace LIKE ?")
+        .run(`draft:${accountId}:%`, `deepagent:${accountId}:%`).changes;
+
+      return {
+        messagesDeleted,
+        threadsDeleted,
+        draftsDeleted,
+        memoryNotesDeleted,
+        syncStateDeleted,
+        accountRowDeleted,
+        agentStoreDeleted,
+      };
+    });
+
+    return result();
+  }
 }

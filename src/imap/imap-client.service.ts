@@ -57,11 +57,7 @@ export class ImapClientService {
 
     try {
       const mailbox = await client.mailboxOpen('INBOX');
-      const bootstrapWindow = options?.bootstrapMessageWindow ?? 0;
-      const isBootstrap = lastUid === 0 && bootstrapWindow > 0;
-      const range = isBootstrap
-        ? `${Math.max(1, mailbox.exists - bootstrapWindow + 1)}:*`
-        : `${Math.max(1, lastUid + 1)}:*`;
+      const range = resolveFetchRange(lastUid, mailbox.exists, options);
       const messages: ImapMessage[] = [];
       let maxUid = lastUid;
 
@@ -184,4 +180,21 @@ export class ImapClientService {
     await client.connect();
     return client;
   }
+}
+
+export function resolveFetchRange(
+  lastUid: number,
+  mailboxExists: number,
+  options?: FetchNewMessagesOptions,
+): string {
+  if (lastUid > 0) {
+    return `${Math.max(1, lastUid + 1)}:*`;
+  }
+
+  const bootstrapWindow = options?.bootstrapMessageWindow ?? 0;
+  if (bootstrapWindow > 0) {
+    return `${Math.max(1, mailboxExists - bootstrapWindow + 1)}:*`;
+  }
+
+  return '1:*';
 }

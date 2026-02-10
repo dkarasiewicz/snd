@@ -122,6 +122,7 @@ snd thread <threadId> --regen --instruction "shorter, ask one question"
 - `snd rule --add-ignore-domain foo.com`
 - `snd rule --add-style "@vip.com:ultra concise, direct"`
 - `snd config --set-poll 180`
+- `snd config --reset-account <id>` (reset local synced state, keep credentials)
 - `snd memory --set-user "writing:tight, clear, action-oriented"`
 - `snd memory --list-user`
 - `snd plugin list`
@@ -248,6 +249,7 @@ If DeepAgents is unavailable or errors, `snd` falls back to direct chat-completi
 - v0.1 targets `INBOX` polling.
 - Current draft heuristics are intentionally simple and meant to be iterated.
 - Sending emails is intentionally out of scope.
+- Initial sync prioritizes newest threads from a recent mailbox window, then periodic sync fetches everything since last seen UID.
 
 ## CI/CD
 
