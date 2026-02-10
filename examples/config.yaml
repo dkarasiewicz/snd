@@ -1,0 +1,33 @@
+version: 1
+defaultAccountId: main
+poll:
+  intervalSeconds: 300
+llm:
+  provider: openai-compatible
+  baseUrl: https://api.openai.com/v1
+  model: gpt-4o-mini
+  apiKeySecretKey: llm:default
+  useDeepAgents: true
+rules:
+  ignoreSenders:
+    - noreply@somevendor.com
+  ignoreDomains:
+    - newsletters.example
+  globalVibe: brief, technical, direct
+  styles:
+    - match: my-vp@company.com
+      vibe: crisp, executive, 3-5 lines, action items first
+accounts:
+  - id: main
+    email: you@gmail.com
+    provider: gmail
+    imap:
+      host: imap.gmail.com
+      port: 993
+      secure: true
+      username: you@gmail.com
+      auth: oauth2
+    oauth:
+      clientId: YOUR_GOOGLE_CLIENT_ID
+      clientSecret: YOUR_GOOGLE_CLIENT_SECRET
+      redirectUri: http://localhost

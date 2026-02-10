@@ -1,0 +1,59 @@
+{
+  "name": "snd",
+  "version": "0.1.0",
+  "description": "snd: local CLI that syncs IMAP threads and drafts replies with an LLM",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "snd": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "imap",
+    "cli",
+    "email",
+    "llm",
+    "draft"
+  ],
+  "author": "Damian Karasiewicz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dkarasiewicz/snd.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dkarasiewicz/snd/issues"
+  },
+  "homepage": "https://github.com/dkarasiewicz/snd#readme",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "dependencies": {
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.5.0",
+    "imapflow": "^1.0.191",
+    "mailparser": "^3.7.2",
+    "nest-commander": "^3.17.0",
+    "better-sqlite3": "^11.7.2",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.13.5",
+    "eslint": "^9.20.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}

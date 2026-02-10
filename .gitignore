@@ -1,0 +1,7 @@
+node_modules
+dist
+.snd
+.env
+.DS_Store
+coverage
+.idea
